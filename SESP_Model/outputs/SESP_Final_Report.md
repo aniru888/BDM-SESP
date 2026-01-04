@@ -340,16 +340,16 @@ NPV COMPARISON (at 20% customer discount rate):
 ├── Purchase NPV: Rs38,500
 ├── SESP NPV: Rs31,014
 ├── Savings: Rs7,486 (19.4%)
-└── PC Satisfied? YES ✓ (>10% threshold)
+└── PC Satisfied? YES ✓ (>5% threshold)
 ```
 
 ### Segment-Specific PC Multipliers
 
 | Segment | Discount Rate | Threshold | Notes |
 |---------|---------------|-----------|-------|
-| Light | 25% | 12% | More price-sensitive |
-| Moderate | 20% | 10% | Base case |
-| Heavy | 16% | 8% | Value-focused |
+| Light | 25% | 7% | More price-sensitive |
+| Moderate | 20% | 5% | Base case |
+| Heavy | 16% | 4% | Value-focused |
 
 ## 5.2 Incentive Compatibility (IC)
 

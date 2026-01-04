@@ -378,7 +378,7 @@ def find_pc_boundary(
     sesp_plan: str = 'moderate',
     efficiency_score: float = 75.0,
     deposit: float = 5000,
-    threshold: float = 0.10,
+    threshold: float = 0.05,
 ) -> Dict[str, Any]:
     """
     Find the maximum subsidized price that satisfies participation constraint.
@@ -466,7 +466,7 @@ def find_pc_boundary_by_fee(
     appliance: str = 'AC',
     sesp_plan: str = 'moderate',
     efficiency_score: float = 75.0,
-    threshold: float = 0.10,
+    threshold: float = 0.05,
 ) -> Dict[str, Any]:
     """
     Find the maximum monthly fee that satisfies participation constraint.
