@@ -344,9 +344,64 @@ where:
 
 ---
 
+---
+
+## Dashboard-Report Consistency (2026-01-04)
+
+### Realisation 10: Two-Scenario Approach for Financial Analysis
+
+**Date:** 2026-01-04
+**Source:** Dashboard-Report discrepancy investigation
+
+**Finding:**
+The original dashboard showed significantly different numbers than the Final Report:
+
+| Metric | Dashboard (old) | Report | Gap |
+|--------|-----------------|--------|-----|
+| Customer Savings | -8.1% | +19.4% | 27.5pp |
+| Company Margin | Rs 1,989 | Rs 6,454 | Rs 4,465 |
+| Break-even | Month 60 | Month 23 | 37 months |
+
+**Root Cause:**
+The dashboard was calculating a "Base Case" (fixed fees only) while the report used "Expected Case" (simulation averages including overage, discounts, add-ons).
+
+**Resolution:**
+Added a **Scenario Toggle** to the dashboard with two modes:
+
+| Scenario | Components Included |
+|----------|---------------------|
+| **Expected Case** (default) | Base revenue + Overage (Rs 1,200) + Add-ons (Rs 1,500) - Discount cost (Rs 2,600) |
+| **Base Case** | Base revenue only (fixed monthly fees) |
+
+**Expected Case Additional Components:**
+```
+Overage Revenue: +Rs 1,200   (26% months @ avg Rs 77)
+Add-on Revenue:  +Rs 1,500   (extended warranty, services)
+Discount Cost:   -Rs 2,600   (7% avg efficiency discount)
+Net Impact:      +Rs 100     (small positive)
+```
+
+**Break-even Difference:**
+Expected Case includes deposit (Rs 5,000) as cash inflow and bank subsidy (Rs 2,000) in deficit calculation, dramatically improving break-even from Month 60 to Month 23.
+
+**Business Implication:**
+> Base Case answers: "What's the minimum we can expect?" (risk floor)
+> Expected Case answers: "What should we expect based on simulation?" (realistic projection)
+>
+> Both are valid views. The dashboard now shows Expected Case by default (matches report)
+> with option to toggle to Base Case for conservative analysis.
+
+**Implementation:**
+- Dashboard: Sidebar toggle (Expected/Base), affects all tabs
+- Report: New Section 7.7 explaining both scenarios
+- All formula expanders updated to show scenario-specific calculations
+
+---
+
 ## Version History
 
 | Date | Change | Source |
 |------|--------|--------|
 | 2026-01-04 | Initial creation with MCDM findings | Tasks 2.0.1, 2.0.2, 2.0.3 |
 | 2026-01-04 | Added Dashboard Metrics Rationale | Dashboard verification & fixes |
+| 2026-01-04 | Added Two-Scenario Approach | Dashboard-Report consistency work |

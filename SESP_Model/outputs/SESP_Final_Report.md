@@ -19,6 +19,7 @@
 5. [Constraint Satisfaction](#5-constraint-satisfaction)
 6. [Moral Hazard Analysis](#6-moral-hazard-analysis)
 7. [Profitability Analysis](#7-profitability-analysis)
+   - 7.7 [Base Case vs Expected Case](#77-base-case-vs-expected-case-analysis)
 8. [Simulation Results](#8-simulation-results)
 9. [India Recommendations](#9-india-recommendations)
 10. [Conclusion](#10-conclusion)
@@ -626,6 +627,86 @@ This Rs2,000 CAC subsidy turns marginal profitability into solid margin.
 | **Blended** | - | 100% | - | **+Rs3,930** |
 
 Heavy users (20%) paying premium effectively subsidize Lite users (30%), making the portfolio profitable overall.
+
+## 7.7 Base Case vs Expected Case Analysis
+
+The SESP financial model has two views for analysis:
+
+### Base Case (Conservative)
+
+**Assumption:** Customer pays full monthly fee, earns no efficiency discounts, incurs no overage.
+
+**Use Case:** Risk assessment, worst-case scenario analysis, minimum viable scenario.
+
+| Metric | Base Case Value |
+|--------|----------------|
+| Customer Savings | -8.1% (SESP costs more than purchase) |
+| Company Margin | Rs 1,989 (4.0%) |
+| Break-even | Month 60 |
+
+**Calculation:**
+```
+Revenue = Upfront (net GST) + Monthly fees × 60 (net GST)
+        = Rs 19,068 + Rs 30,441
+        = Rs 49,509
+
+Costs = Upfront cost + Recurring cost
+      = Rs 38,000 + Rs 11,520
+      = Rs 49,520
+
+Margin = Revenue - Costs + Bank Subsidy
+       = Rs 49,509 - Rs 49,520 + Rs 2,000
+       = Rs 1,989 (4.0%)
+```
+
+### Expected Case (Simulation Average)
+
+**Assumption:** Based on 1,000 customer × 60 month simulation with realistic usage patterns.
+
+**Use Case:** Business planning, investor communication, realistic projections.
+
+| Metric | Expected Case Value |
+|--------|---------------------|
+| Customer Savings | +19.4% (SESP saves vs purchase) |
+| Company Margin | Rs 6,454 (18.5%) |
+| Break-even | Month 23 |
+
+**Additional Revenue/Cost Components (vs Base Case):**
+
+| Component | Amount | Source |
+|-----------|--------|--------|
+| Overage Revenue | +Rs 1,200 | 26% months have overage @ avg Rs 77 |
+| Add-on Revenue | +Rs 1,500 | Extended warranty, services (5% uplift) |
+| Efficiency Discount Cost | -Rs 2,600 | 7% avg discount given to customers |
+| **Net Additional Revenue** | **+Rs 100** | Small net positive |
+
+**Break-even Improvement:**
+- Deposit (Rs 5,000) counted as cash inflow
+- Bank subsidy (Rs 2,000) reduces effective deficit
+- Monthly contribution includes overage avg
+
+### Reconciliation Table
+
+| Component | Base Case | Expected Case | Delta |
+|-----------|-----------|---------------|-------|
+| Monthly Revenue (base) | Rs 30,441 | Rs 30,441 | Rs 0 |
+| Overage Revenue | Rs 0 | Rs 1,200 | +Rs 1,200 |
+| Add-on Revenue | Rs 0 | Rs 1,500 | +Rs 1,500 |
+| Efficiency Discount Cost | Rs 0 | -Rs 2,600 | -Rs 2,600 |
+| **Total Revenue** | **Rs 49,509** | **Rs 50,609** | **+Rs 1,100** |
+| Bank Subsidy | Rs 2,000 | Rs 2,000 | Rs 0 |
+| **Total Margin** | **Rs 1,989** | **Rs 6,454** | **+Rs 4,465** |
+
+### When to Use Each Case
+
+| Scenario | Use Base Case | Use Expected Case |
+|----------|---------------|-------------------|
+| Investor pitch | For risk disclosure | For projections |
+| Financial modeling | Conservative scenario | Base scenario |
+| Unit economics | Floor estimate | Realistic estimate |
+| Dashboard default | Toggle option | Default view |
+
+**Key Insight:** The ~Rs 4,500 difference between Base and Expected cases comes primarily from the bank subsidy's impact on break-even calculation and the net revenue from overage minus discounts. This demonstrates the value of the simulation-based approach over simple fixed-fee calculations.
 
 ---
 

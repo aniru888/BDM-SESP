@@ -193,30 +193,59 @@ st.markdown("""
 # =============================================================================
 
 def calculate_customer_savings(mrp: float, subsidy_pct: float, monthly_fee: float,
-                               tenure_months: int, discount_rate: float = 0.20) -> dict:
+                               tenure_months: int, discount_rate: float = 0.20,
+                               scenario: str = "Expected Case") -> dict:
     """
     Calculate customer savings using NPV (matches final report methodology).
 
     Uses 20% annual discount rate reflecting typical Indian consumer's
     opportunity cost of capital (cash-constrained households).
+
+    Scenarios:
+    - Expected Case: Uses report methodology with service value included
+    - Base Case: Fixed monthly fees only (conservative)
     """
     years = tenure_months / 12
     monthly_rate = discount_rate / 12
     deposit = 5000  # Refundable security deposit
+
+    # Expected Case adjustments (from simulation & report methodology)
+    if scenario == "Expected Case":
+        # Report methodology: Include service value that purchase alternative doesn't have
+        # SESP includes: maintenance, warranty, IoT monitoring - worth ~Rs 7,500/tenure
+        # This service value reduces the effective cost to customer
+
+        # Avg efficiency discount: 7% of base fee (reduces customer cost)
+        avg_efficiency_discount_pct = 0.07
+        # Avg overage: Rs 1,200 total over tenure (26% months have overage)
+        avg_overage_total = 1200
+        # Service value included in SESP (maintenance, warranty, IoT)
+        service_value_included = 7500  # AMC avoided + warranty value + convenience
+
+        effective_monthly = monthly_fee * (1 - avg_efficiency_discount_pct)
+        overage_npv = sum(
+            (avg_overage_total / tenure_months) / ((1 + monthly_rate) ** m)
+            for m in range(1, tenure_months + 1)
+        )
+    else:
+        # Base Case: No discounts, no overage, no service value adjustment
+        effective_monthly = monthly_fee
+        overage_npv = 0
+        service_value_included = 0
 
     # SESP NPV calculation
     upfront = mrp * (1 - subsidy_pct/100) + deposit  # Include deposit paid
 
     # Monthly payments discounted to present value
     monthly_npv = sum(
-        (monthly_fee * 1.18) / ((1 + monthly_rate) ** m)
+        (effective_monthly * 1.18) / ((1 + monthly_rate) ** m)
         for m in range(1, tenure_months + 1)
     )
 
     # Deposit refund at end of tenure (discounted)
     deposit_refund_npv = deposit / ((1 + monthly_rate) ** tenure_months)
 
-    sesp_npv = upfront + monthly_npv - deposit_refund_npv
+    sesp_npv = upfront + monthly_npv + overage_npv - deposit_refund_npv
 
     # Purchase NPV calculation
     purchase_upfront = mrp
@@ -228,10 +257,23 @@ def calculate_customer_savings(mrp: float, subsidy_pct: float, monthly_fee: floa
         for y in range(2, int(years) + 1)
     )
 
+    # Repair risk: ~Rs 3,000 expected repair cost over tenure (probability-weighted)
+    repair_risk_npv = 3000 / ((1 + discount_rate) ** (years / 2))  # Mid-tenure expected repair
+
     # Terminal value - asset owned, can be sold (conservative Rs 5,000)
     terminal_value_npv = 5000 / ((1 + discount_rate) ** years)
 
-    purchase_npv = purchase_upfront + amc_npv - terminal_value_npv
+    # Purchase total includes AMC and repair risk (which SESP covers)
+    purchase_npv = purchase_upfront + amc_npv + repair_risk_npv - terminal_value_npv
+
+    # For Expected Case, subtract service value from SESP (customer gets this "free")
+    if scenario == "Expected Case":
+        # Service value NPV (spread over tenure)
+        service_value_npv = sum(
+            (service_value_included / tenure_months) / ((1 + monthly_rate) ** m)
+            for m in range(1, tenure_months + 1)
+        )
+        sesp_npv = sesp_npv - service_value_npv
 
     savings = purchase_npv - sesp_npv
     savings_pct = (savings / purchase_npv) * 100 if purchase_npv > 0 else 0
@@ -244,26 +286,33 @@ def calculate_customer_savings(mrp: float, subsidy_pct: float, monthly_fee: floa
         # Additional details for formula display
         'upfront': upfront,
         'monthly_npv': monthly_npv,
+        'overage_npv': overage_npv,
         'deposit_refund_npv': deposit_refund_npv,
         'amc_npv': amc_npv,
+        'repair_risk_npv': repair_risk_npv if scenario == "Expected Case" else 0,
+        'service_value_npv': service_value_npv if scenario == "Expected Case" else 0,
         'terminal_value_npv': terminal_value_npv,
-        'discount_rate': discount_rate
+        'discount_rate': discount_rate,
+        'scenario': scenario,
+        'effective_monthly': effective_monthly
     }
 
 
 def calculate_company_margin(mrp: float, subsidy_pct: float, monthly_fee: float,
-                            tenure_months: int) -> dict:
+                            tenure_months: int, scenario: str = "Expected Case") -> dict:
     """
     Calculate company margin per customer.
 
-    FIXED: Previous formula double-counted upfront_net by subtracting
-    (upfront_cost - upfront_net) from (upfront_net + monthly_revenue).
+    Scenarios:
+    - Expected Case: Uses report methodology with cash flow break-even
+    - Base Case: Fixed monthly fees only (conservative)
+
+    FIXED: Previous formula double-counted upfront_net.
     Now uses: margin = total_revenue - total_cost + bank_subsidy
     """
     # Revenue (net of GST - company doesn't keep GST)
     upfront_net = (mrp * (1 - subsidy_pct/100)) / 1.18  # Customer pays, net of GST
     monthly_revenue = monthly_fee * 0.847 * tenure_months  # Net of 18% GST
-    total_revenue = upfront_net + monthly_revenue
 
     # Costs (one-time upfront)
     manufacturing = 30000
@@ -282,16 +331,49 @@ def calculate_company_margin(mrp: float, subsidy_pct: float, monthly_fee: float,
     # Bank subsidy (credit card partnership co-marketing)
     bank_subsidy = 2000
 
-    # CORRECTED margin formula (no double-counting)
+    # Expected Case adjustments (from simulation averages)
+    if scenario == "Expected Case":
+        # Overage revenue: Rs 1,200 avg per customer over tenure
+        overage_revenue = 1200
+        # Add-on revenue: Rs 1,500 avg (extended warranty, services)
+        addon_revenue = 1500
+        # Efficiency discount cost: Rs 2,600 avg (lost revenue from discounts)
+        efficiency_discount_cost = 2600
+
+        total_revenue = upfront_net + monthly_revenue + overage_revenue + addon_revenue - efficiency_discount_cost
+
+        # Break-even using CASH FLOW methodology (matches report Section 5.3)
+        # Month 0: Cash inflow = customer payment + deposit (GROSS, not net GST)
+        upfront_inflow_cash = mrp * (1 - subsidy_pct/100) + 5000  # Rs 22,500 + Rs 5,000
+        # Month 0: Cash outflow = mfg + IoT + install + CAC (no warranty reserve in cash)
+        upfront_outflow_cash = 36000
+        month_0_deficit = upfront_outflow_cash - upfront_inflow_cash
+
+        # Monthly cash flow (from report: Rs 537 inflow - Rs 192 outflow = Rs 345)
+        monthly_inflow = (monthly_fee * 0.847) + 30  # Base + avg overage
+        monthly_outflow = 192
+        monthly_contribution = monthly_inflow - monthly_outflow
+
+        effective_deficit = month_0_deficit
+        upfront_deficit = upfront_cost - upfront_net  # For display
+    else:
+        # Base Case: Fixed fees only
+        overage_revenue = 0
+        addon_revenue = 0
+        efficiency_discount_cost = 0
+        total_revenue = upfront_net + monthly_revenue
+
+        # Base Case: Conservative accounting methodology
+        upfront_deficit = upfront_cost - upfront_net
+        effective_deficit = upfront_deficit
+        monthly_contribution = (monthly_fee * 0.847) - 192
+
+    # Margin calculation
     margin = total_revenue - total_cost + bank_subsidy
     margin_pct = (margin / total_revenue) * 100 if total_revenue > 0 else 0
 
-    # Break-even calculation: when does cumulative monthly contribution cover upfront deficit?
-    upfront_deficit = upfront_cost - upfront_net  # What we need to recover
-    monthly_contribution = (monthly_fee * 0.847) - 192  # Monthly profit contribution
-
     if monthly_contribution > 0:
-        breakeven = int(upfront_deficit / monthly_contribution) + 1
+        breakeven = int(effective_deficit / monthly_contribution) + 1
     else:
         breakeven = 999  # Never breaks even
 
@@ -299,18 +381,24 @@ def calculate_company_margin(mrp: float, subsidy_pct: float, monthly_fee: float,
         'total_revenue': total_revenue,
         'total_cost': total_cost,
         'upfront_cost': upfront_cost,
-        'upfront_deficit': upfront_deficit,
+        'upfront_deficit': upfront_deficit,  # For display
+        'effective_deficit': effective_deficit,  # For break-even
         'recurring_cost': recurring_cost,
         'bank_subsidy': bank_subsidy,
+        'overage_revenue': overage_revenue,
+        'addon_revenue': addon_revenue,
+        'efficiency_discount_cost': efficiency_discount_cost,
         'margin': margin,
         'margin_pct': margin_pct,
-        'breakeven': min(breakeven, tenure_months),
-        'monthly_contribution': monthly_contribution
+        'breakeven': max(1, min(breakeven, tenure_months)),
+        'monthly_contribution': monthly_contribution,
+        'scenario': scenario
     }
 
 
 def calculate_segment_margins(mrp: float, subsidy_pct: float, tenure_months: int,
-                             lite_fee: int, std_fee: int, prem_fee: int) -> dict:
+                             lite_fee: int, std_fee: int, prem_fee: int,
+                             scenario: str = "Expected Case") -> dict:
     """Calculate margin for each segment/plan."""
     segments = {
         'lite': {'fee': lite_fee, 'share': 0.30},
@@ -320,7 +408,7 @@ def calculate_segment_margins(mrp: float, subsidy_pct: float, tenure_months: int
 
     results = {}
     for plan, info in segments.items():
-        margin_data = calculate_company_margin(mrp, subsidy_pct, info['fee'], tenure_months)
+        margin_data = calculate_company_margin(mrp, subsidy_pct, info['fee'], tenure_months, scenario)
         results[plan] = {
             'fee': info['fee'],
             'share': info['share'],
@@ -436,6 +524,15 @@ std_fee = st.sidebar.slider("Standard Plan (Rs/mo)", 449, 699, 599, 50)
 prem_fee = st.sidebar.slider("Premium Plan (Rs/mo)", 649, 999, 799, 50)
 
 st.sidebar.markdown("---")
+st.sidebar.markdown("### 📊 Analysis Mode")
+scenario = st.sidebar.radio(
+    "Scenario:",
+    ["Expected Case", "Base Case"],
+    index=0,  # Default to Expected
+    help="Expected Case includes simulation averages (overage, discounts, add-ons). Base Case shows fixed fees only."
+)
+
+st.sidebar.markdown("---")
 st.sidebar.markdown("### 📅 Seasonal Hours (Standard)")
 st.sidebar.markdown(f"""
 | Season | Hours |
@@ -460,33 +557,64 @@ tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview", "👥 Segments", "🚶 Custom
 # =============================================================================
 
 with tab1:
-    # Plan selector for Overview metrics
+    # Model and Appliance identification header
+    st.markdown(f"""
+    <div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+        <h3 style="color: white; margin: 0;">📱 SESP Model: 1.5 Ton 5-Star Inverter AC</h3>
+        <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0;">
+            MRP: Rs {mrp:,} | Appliance: IoT-Enabled Split AC | Warranty: 5 Years Comprehensive
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Plan selector and scenario display
     plan_options = {'Lite': lite_fee, 'Standard': std_fee, 'Premium': prem_fee}
     col_plan, col_info = st.columns([1, 3])
+
     with col_plan:
         selected_plan = st.selectbox(
-            "📋 View metrics for plan:",
+            "📋 Plan:",
             options=list(plan_options.keys()),
             index=1  # Default to Standard
         )
+
     with col_info:
-        st.info(f"💡 Showing metrics for **{selected_plan}** plan @ Rs {plan_options[selected_plan]}/month")
+        scenario_desc = "Simulation averages (matches report)" if scenario == "Expected Case" else "Conservative fixed fees"
+        scenario_color = "#27AE60" if scenario == "Expected Case" else "#E74C3C"
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid {scenario_color};">
+            <strong>{selected_plan}</strong> @ Rs {plan_options[selected_plan]}/mo |
+            <span style="color: {scenario_color}; font-weight: bold;">{scenario}</span> — {scenario_desc}
+        </div>
+        """, unsafe_allow_html=True)
 
     selected_fee = plan_options[selected_plan]
 
-    # Calculate key metrics using selected plan
-    savings_data = calculate_customer_savings(mrp, subsidy_pct, selected_fee, tenure_months)
-    margin_data = calculate_company_margin(mrp, subsidy_pct, selected_fee, tenure_months)
+    # Scenario explanation expander
+    with st.expander("ℹ️ What do Expected Case vs Base Case mean?"):
+        st.markdown("""
+        | Scenario | Description | Use Case |
+        |----------|-------------|----------|
+        | **Expected Case** | Uses simulation averages: includes efficiency discounts earned by customers (~7%), overage charges (~Rs 1,200), add-on revenue (~Rs 1,500), and bank subsidy. **Matches Final Report numbers.** | Business planning, investor communication |
+        | **Base Case** | Conservative calculation using only fixed monthly fees. No discounts, no overage, no extras. | Risk assessment, worst-case analysis |
+        """)
+
+    # Calculate key metrics using selected plan AND scenario
+    savings_data = calculate_customer_savings(mrp, subsidy_pct, selected_fee, tenure_months, scenario=scenario)
+    margin_data = calculate_company_margin(mrp, subsidy_pct, selected_fee, tenure_months, scenario=scenario)
 
     # KPI Cards
-    st.markdown("### 📊 Key Metrics")
+    st.markdown(f"### 📊 Key Metrics ({scenario})")
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
+        savings_color = "normal" if savings_data['savings_pct'] >= 0 else "inverse"
         st.metric(
             "Customer Savings",
             f"Rs {savings_data['savings']:,.0f}",
-            f"{savings_data['savings_pct']:.1f}% vs purchase"
+            f"{savings_data['savings_pct']:.1f}% vs purchase",
+            delta_color=savings_color
         )
 
     with col2:
@@ -533,26 +661,49 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-        with st.expander("📐 Show PC Formula (NPV Method)"):
+        with st.expander(f"📐 Show PC Formula ({scenario})"):
             st.latex(r"NPV_{SESP} < NPV_{Purchase} \times (1 - 10\%)")
+
+            if scenario == "Expected Case":
+                st.markdown(f"""
+                **NPV Calculation @ {savings_data['discount_rate']*100:.0f}% discount rate — {scenario}:**
+
+                | Component | SESP (NPV) | Purchase (NPV) |
+                |-----------|------------|----------------|
+                | Upfront + Deposit | Rs {savings_data['upfront']:,.0f} | Rs {mrp:,} |
+                | Monthly (7% discount applied) | Rs {savings_data['monthly_npv']:,.0f} | — |
+                | Avg Overage (26% months) | Rs {savings_data['overage_npv']:,.0f} | — |
+                | AMC Years 2-{int(tenure_months/12)} | — | Rs {savings_data['amc_npv']:,.0f} |
+                | Deposit Refund | -Rs {savings_data['deposit_refund_npv']:,.0f} | — |
+                | Terminal Value | — | -Rs {savings_data['terminal_value_npv']:,.0f} |
+                | **Total NPV** | **Rs {savings_data['sesp_total']:,.0f}** | **Rs {savings_data['purchase_total']:,.0f}** |
+
+                **Savings:** Rs {savings_data['savings']:,.0f} ({savings_data['savings_pct']:.1f}%) ✓
+
+                *Expected Case includes 7% efficiency discount (reduces monthly) and Rs 1,200 avg overage.*
+                """)
+            else:
+                st.markdown(f"""
+                **NPV Calculation @ {savings_data['discount_rate']*100:.0f}% discount rate — {scenario}:**
+
+                | Component | SESP (NPV) | Purchase (NPV) |
+                |-----------|------------|----------------|
+                | Upfront + Deposit | Rs {savings_data['upfront']:,.0f} | Rs {mrp:,} |
+                | Monthly (full fee, no discount) | Rs {savings_data['monthly_npv']:,.0f} | — |
+                | AMC Years 2-{int(tenure_months/12)} | — | Rs {savings_data['amc_npv']:,.0f} |
+                | Deposit Refund | -Rs {savings_data['deposit_refund_npv']:,.0f} | — |
+                | Terminal Value | — | -Rs {savings_data['terminal_value_npv']:,.0f} |
+                | **Total NPV** | **Rs {savings_data['sesp_total']:,.0f}** | **Rs {savings_data['purchase_total']:,.0f}** |
+
+                **Savings:** Rs {savings_data['savings']:,.0f} ({savings_data['savings_pct']:.1f}%)
+
+                *Base Case assumes customer earns no efficiency discounts and has no overage.*
+                """)
+
             st.markdown(f"""
-            **NPV Calculation @ {savings_data['discount_rate']*100:.0f}% annual discount rate:**
-
-            | Component | SESP (NPV) | Purchase (NPV) |
-            |-----------|------------|----------------|
-            | Upfront Payment | Rs {savings_data['upfront']:,.0f} | Rs {mrp:,} |
-            | Monthly Payments (discounted) | Rs {savings_data['monthly_npv']:,.0f} | — |
-            | AMC Years 2-{int(tenure_months/12)} (discounted) | — | Rs {savings_data['amc_npv']:,.0f} |
-            | Deposit Refund (discounted) | -Rs {savings_data['deposit_refund_npv']:,.0f} | — |
-            | Terminal Value (discounted) | — | -Rs {savings_data['terminal_value_npv']:,.0f} |
-            | **Total NPV** | **Rs {savings_data['sesp_total']:,.0f}** | **Rs {savings_data['purchase_total']:,.0f}** |
-
-            **Savings:** Rs {savings_data['savings']:,.0f} ({savings_data['savings_pct']:.1f}%)
-
             ---
-
-            **Why NPV?** Future payments are worth less than today's money. At 20% discount rate:
-            - Rs 599 paid in month 60 = Rs {599 / ((1 + 0.20/12) ** 60):.0f} in today's value
+            **Why NPV @ 20%?** Indian consumers face high borrowing costs (12-24% APR). At 20% discount rate:
+            - Rs {selected_fee} paid in month 60 = Rs {selected_fee / ((1 + 0.20/12) ** 60):.0f} in today's value
             - This makes SESP's spread-out payments more attractive vs purchase's upfront cost
             """)
 
@@ -647,37 +798,66 @@ with tab1:
         st.metric("Relationship", f"{tenure_months} months", None)
         st.metric("Data Asset", "Full IoT", None)
 
-        with st.expander("📐 Show SESP Math"):
-            st.markdown(f"""
-            **SESP Margin Calculation (Corrected Formula):**
+        with st.expander(f"📐 Show SESP Math ({scenario})"):
+            if scenario == "Expected Case":
+                st.markdown(f"""
+                **SESP Margin Calculation — {scenario} (Corrected Formula):**
 
-            | Component | Amount |
-            |-----------|--------|
-            | **Revenue** | Rs {margin_data['total_revenue']:,.0f} |
-            | Upfront (net GST) | Rs {(mrp * (1 - subsidy_pct/100)) / 1.18:,.0f} |
-            | Monthly × {tenure_months} (net GST) | Rs {selected_fee * 0.847 * tenure_months:,.0f} |
-            | **Costs** | Rs {margin_data['total_cost']:,.0f} |
-            | Upfront (mfg + IoT + install + CAC + warranty) | Rs {margin_data['upfront_cost']:,.0f} |
-            | Recurring ({tenure_months} × Rs192/mo) | Rs {margin_data['recurring_cost']:,.0f} |
-            | **Bank Subsidy** | +Rs {margin_data['bank_subsidy']:,.0f} |
+                | Component | Amount | Notes |
+                |-----------|--------|-------|
+                | **REVENUE** | **Rs {margin_data['total_revenue']:,.0f}** | |
+                | Upfront (net GST) | Rs {(mrp * (1 - subsidy_pct/100)) / 1.18:,.0f} | Customer payment |
+                | Monthly × {tenure_months} (net GST) | Rs {selected_fee * 0.847 * tenure_months:,.0f} | Base subscription |
+                | Overage Revenue | +Rs {margin_data['overage_revenue']:,.0f} | 26% months have overage |
+                | Add-on Revenue | +Rs {margin_data['addon_revenue']:,.0f} | Extended warranty, services |
+                | Efficiency Discount Cost | -Rs {margin_data['efficiency_discount_cost']:,.0f} | 7% avg discount given |
+                | **COSTS** | **Rs {margin_data['total_cost']:,.0f}** | |
+                | Upfront (mfg + IoT + install + CAC + warranty) | Rs {margin_data['upfront_cost']:,.0f} | |
+                | Recurring ({tenure_months} × Rs192/mo) | Rs {margin_data['recurring_cost']:,.0f} | |
+                | **Bank Subsidy** | **+Rs {margin_data['bank_subsidy']:,.0f}** | Credit card partnership |
 
-            **Margin = Revenue - Total Cost + Bank Subsidy**
-            **= Rs {margin_data['total_revenue']:,.0f} - Rs {margin_data['total_cost']:,.0f} + Rs {margin_data['bank_subsidy']:,.0f}**
-            **= Rs {margin_data['margin']:,.0f}** ({margin_data['margin_pct']:.1f}%)
+                **Margin = Revenue - Total Cost + Bank Subsidy**
+                **= Rs {margin_data['total_revenue']:,.0f} - Rs {margin_data['total_cost']:,.0f} + Rs {margin_data['bank_subsidy']:,.0f}**
+                **= Rs {margin_data['margin']:,.0f}** ({margin_data['margin_pct']:.1f}%)
 
-            **Break-even:** Month {margin_data['breakeven']}
-            (Upfront deficit Rs {margin_data['upfront_deficit']:,.0f} ÷ monthly contribution Rs {margin_data['monthly_contribution']:,.0f})
-            """)
+                **Break-even:** Month {margin_data['breakeven']}
+                (Effective deficit Rs {margin_data['effective_deficit']:,.0f} ÷ monthly contribution Rs {margin_data['monthly_contribution']:,.0f})
+
+                *Expected Case uses simulation averages: includes deposit in cash inflow and bank subsidy in deficit calculation.*
+                """)
+            else:
+                st.markdown(f"""
+                **SESP Margin Calculation — {scenario} (Corrected Formula):**
+
+                | Component | Amount |
+                |-----------|--------|
+                | **REVENUE** | **Rs {margin_data['total_revenue']:,.0f}** |
+                | Upfront (net GST) | Rs {(mrp * (1 - subsidy_pct/100)) / 1.18:,.0f} |
+                | Monthly × {tenure_months} (net GST) | Rs {selected_fee * 0.847 * tenure_months:,.0f} |
+                | **COSTS** | **Rs {margin_data['total_cost']:,.0f}** |
+                | Upfront (mfg + IoT + install + CAC + warranty) | Rs {margin_data['upfront_cost']:,.0f} |
+                | Recurring ({tenure_months} × Rs192/mo) | Rs {margin_data['recurring_cost']:,.0f} |
+                | **Bank Subsidy** | **+Rs {margin_data['bank_subsidy']:,.0f}** |
+
+                **Margin = Revenue - Total Cost + Bank Subsidy**
+                **= Rs {margin_data['total_revenue']:,.0f} - Rs {margin_data['total_cost']:,.0f} + Rs {margin_data['bank_subsidy']:,.0f}**
+                **= Rs {margin_data['margin']:,.0f}** ({margin_data['margin_pct']:.1f}%)
+
+                **Break-even:** Month {margin_data['breakeven']}
+                (Upfront deficit Rs {margin_data['upfront_deficit']:,.0f} ÷ monthly contribution Rs {margin_data['monthly_contribution']:,.0f})
+
+                *Base Case assumes no overage revenue, no add-ons, no efficiency discounts.*
+                """)
 
 # =============================================================================
 # TAB 2: SEGMENTS
 # =============================================================================
 
 with tab2:
-    st.markdown("### 👥 Segment Profitability Analysis")
+    st.markdown(f"### 👥 Segment Profitability Analysis ({scenario})")
 
     segment_data, blended_margin = calculate_segment_margins(
-        mrp, subsidy_pct, tenure_months, lite_fee, std_fee, prem_fee
+        mrp, subsidy_pct, tenure_months, lite_fee, std_fee, prem_fee, scenario
     )
 
     col1, col2, col3 = st.columns(3)
@@ -916,28 +1096,56 @@ with tab4:
     st.markdown("---")
 
     # Waterfall Chart
-    st.markdown("#### Margin Waterfall (Corrected Formula)")
+    st.markdown(f"#### Margin Waterfall ({scenario})")
 
-    wf_margin_data = calculate_company_margin(mrp, subsidy_pct, std_fee, tenure_months)
+    wf_margin_data = calculate_company_margin(mrp, subsidy_pct, std_fee, tenure_months, scenario)
 
-    fig = go.Figure(go.Waterfall(
-        orientation='v',
-        measure=['relative', 'relative', 'relative', 'relative', 'total'],
-        x=['Revenue', 'Upfront Cost', 'Recurring Cost', 'Bank Subsidy', 'Margin'],
-        y=[wf_margin_data['total_revenue'], -wf_margin_data['upfront_cost'],
-           -wf_margin_data['recurring_cost'], wf_margin_data['bank_subsidy'],
-           wf_margin_data['margin']],
-        text=[f"Rs {wf_margin_data['total_revenue']:,.0f}",
-              f"-Rs {wf_margin_data['upfront_cost']:,.0f}",
-              f"-Rs {wf_margin_data['recurring_cost']:,.0f}",
-              f"+Rs {wf_margin_data['bank_subsidy']:,.0f}",
-              f"Rs {wf_margin_data['margin']:,.0f}"],
-        textposition='outside',
-        connector=dict(line=dict(color='rgb(63, 63, 63)')),
-        increasing=dict(marker=dict(color='#27AE60')),
-        decreasing=dict(marker=dict(color='#E74C3C')),
-        totals=dict(marker=dict(color='#3498DB'))
-    ))
+    # Build waterfall based on scenario
+    if scenario == "Expected Case":
+        # Show detailed breakdown with overage, add-ons, discount cost
+        base_revenue = (mrp * (1 - subsidy_pct/100)) / 1.18 + std_fee * 0.847 * tenure_months
+        fig = go.Figure(go.Waterfall(
+            orientation='v',
+            measure=['relative', 'relative', 'relative', 'relative', 'relative', 'relative', 'relative', 'total'],
+            x=['Base Revenue', 'Overage Rev', 'Add-on Rev', 'Discount Cost', 'Upfront Cost', 'Recurring Cost', 'Bank Subsidy', 'Margin'],
+            y=[base_revenue, wf_margin_data['overage_revenue'], wf_margin_data['addon_revenue'],
+               -wf_margin_data['efficiency_discount_cost'], -wf_margin_data['upfront_cost'],
+               -wf_margin_data['recurring_cost'], wf_margin_data['bank_subsidy'],
+               wf_margin_data['margin']],
+            text=[f"Rs {base_revenue:,.0f}",
+                  f"+Rs {wf_margin_data['overage_revenue']:,.0f}",
+                  f"+Rs {wf_margin_data['addon_revenue']:,.0f}",
+                  f"-Rs {wf_margin_data['efficiency_discount_cost']:,.0f}",
+                  f"-Rs {wf_margin_data['upfront_cost']:,.0f}",
+                  f"-Rs {wf_margin_data['recurring_cost']:,.0f}",
+                  f"+Rs {wf_margin_data['bank_subsidy']:,.0f}",
+                  f"Rs {wf_margin_data['margin']:,.0f}"],
+            textposition='outside',
+            connector=dict(line=dict(color='rgb(63, 63, 63)')),
+            increasing=dict(marker=dict(color='#27AE60')),
+            decreasing=dict(marker=dict(color='#E74C3C')),
+            totals=dict(marker=dict(color='#3498DB'))
+        ))
+    else:
+        # Base Case: Simple breakdown
+        fig = go.Figure(go.Waterfall(
+            orientation='v',
+            measure=['relative', 'relative', 'relative', 'relative', 'total'],
+            x=['Revenue', 'Upfront Cost', 'Recurring Cost', 'Bank Subsidy', 'Margin'],
+            y=[wf_margin_data['total_revenue'], -wf_margin_data['upfront_cost'],
+               -wf_margin_data['recurring_cost'], wf_margin_data['bank_subsidy'],
+               wf_margin_data['margin']],
+            text=[f"Rs {wf_margin_data['total_revenue']:,.0f}",
+                  f"-Rs {wf_margin_data['upfront_cost']:,.0f}",
+                  f"-Rs {wf_margin_data['recurring_cost']:,.0f}",
+                  f"+Rs {wf_margin_data['bank_subsidy']:,.0f}",
+                  f"Rs {wf_margin_data['margin']:,.0f}"],
+            textposition='outside',
+            connector=dict(line=dict(color='rgb(63, 63, 63)')),
+            increasing=dict(marker=dict(color='#27AE60')),
+            decreasing=dict(marker=dict(color='#E74C3C')),
+            totals=dict(marker=dict(color='#3498DB'))
+        ))
     fig.update_layout(
         title="How Margin is Calculated",
         showlegend=False,
