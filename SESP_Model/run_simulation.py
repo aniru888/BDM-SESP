@@ -66,8 +66,10 @@ def main():
         'bank_cac_subsidy': 2000,
         'warranty_reserve': 2000,
         'monthly_recurring_cost': 192,
-        # For visualization
-        'upfront_deficit_per_customer': 16932,
+        # For visualization (Base Case vs Expected Case)
+        'upfront_deficit_per_customer': 16932,   # Base Case: No bank subsidy, no deposit
+        'effective_deficit_per_customer': 7559,  # Expected Case: With bank subsidy + deposit
+        'deposit': 5000,
     }
 
     # Step 1: Generate customers

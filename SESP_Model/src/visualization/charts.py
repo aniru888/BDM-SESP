@@ -102,8 +102,9 @@ def plot_usage_distribution(
     ax.set_title('Usage Distribution by Segment')
     ax.legend(title='Segment')
 
-    # Add vertical lines for plan thresholds
-    for hours, label in [(100, 'Lite limit'), (200, 'Standard limit'), (350, 'Premium limit')]:
+    # Add vertical lines for plan thresholds (annual average seasonal hours)
+    # Lite: 88 hrs/mo avg, Standard: 177 hrs/mo avg, Premium: 307 hrs/mo avg
+    for hours, label in [(88, 'Lite avg'), (177, 'Standard avg'), (307, 'Premium avg')]:
         ax.axvline(x=hours, color='gray', linestyle='--', alpha=0.5)
         ax.text(hours + 5, ax.get_ylim()[1] * 0.9, label, fontsize=8, color='gray')
 
@@ -283,19 +284,33 @@ def plot_cumulative_profit(
     grid: pd.DataFrame,
     params: Optional[Dict] = None,
     save_path: Optional[str] = None,
-    show: bool = False
+    show: bool = False,
+    scenario: str = "Expected Case"
 ) -> plt.Figure:
     """
     Line chart showing cumulative profit/loss over tenure.
 
     Validates: Break-even point identification.
+
+    Args:
+        scenario: "Expected Case" (default, matches report) or "Base Case" (conservative)
     """
     if params is None:
-        params = {
-            'upfront_deficit_per_customer': 16932,  # From Phase 3c
-            'monthly_recurring_cost': 192,
-            'bank_cac_subsidy': 2000,
-        }
+        if scenario == "Expected Case":
+            # Expected Case: Include deposit as cash inflow, bank subsidy reduces deficit
+            # Matches dashboard/report methodology for Month 23 break-even
+            params = {
+                'effective_deficit_per_customer': 7559,  # (36000 - 2000) - 27500 + GST adj
+                'monthly_recurring_cost': 192,
+                'monthly_contribution': 315,  # (599 × 0.847) - 192
+            }
+        else:
+            # Base Case: Conservative, no deposit/extras
+            params = {
+                'effective_deficit_per_customer': 16932,  # From Phase 3c (upfront_cost - upfront_net)
+                'monthly_recurring_cost': 192,
+                'monthly_contribution': 315,
+            }
 
     set_presentation_style()
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -303,13 +318,13 @@ def plot_cumulative_profit(
     by_month = aggregate_by_month(grid)
     n_customers = grid['customer_id'].nunique()
 
-    # Calculate cumulative profit
+    # Calculate cumulative profit using cash flow methodology
     cumulative_revenue = by_month['total_revenue'].cumsum()
-    upfront_cost = params['upfront_deficit_per_customer'] * n_customers
+    effective_deficit = params['effective_deficit_per_customer'] * n_customers
     recurring_cost = params['monthly_recurring_cost'] * n_customers * (by_month['month'] + 1)
-    bank_subsidy = params['bank_cac_subsidy'] * n_customers
 
-    cumulative_profit = cumulative_revenue - upfront_cost - recurring_cost + bank_subsidy
+    # Cumulative profit = revenue - initial deficit - recurring costs
+    cumulative_profit = cumulative_revenue - effective_deficit - recurring_cost
 
     ax.plot(by_month['month'], cumulative_profit / 1e6,
             color=COLORS['primary'], linewidth=2)
@@ -339,7 +354,7 @@ def plot_cumulative_profit(
 
     ax.set_xlabel('Month')
     ax.set_ylabel('Cumulative Profit (Rs millions)')
-    ax.set_title('Cumulative Profit/Loss Over Tenure')
+    ax.set_title(f'Cumulative Profit/Loss Over Tenure ({scenario})')
     ax.legend(loc='lower right')
     ax.xaxis.set_major_locator(mticker.MultipleLocator(6))
 
@@ -496,10 +511,14 @@ def plot_margin_waterfall(
     grid: pd.DataFrame,
     params: Optional[Dict] = None,
     save_path: Optional[str] = None,
-    show: bool = False
+    show: bool = False,
+    scenario: str = "Expected Case"
 ) -> plt.Figure:
     """
     Waterfall chart showing margin buildup.
+
+    Args:
+        scenario: "Expected Case" (default, matches report) or "Base Case" (conservative)
     """
     if params is None:
         params = {
@@ -512,6 +531,8 @@ def plot_margin_waterfall(
             'warranty_reserve': 2000,
             'bank_cac_subsidy': 2000,
             'monthly_recurring_cost': 192,
+            'monthly_fee': 599,
+            'deposit': 5000,
         }
 
     set_presentation_style()
@@ -520,15 +541,49 @@ def plot_margin_waterfall(
     portfolio = aggregate_portfolio(grid, params)
     tenure = portfolio['tenure_months']
 
-    # Build waterfall data
-    items = [
-        ('Revenue\n(60 months)', portfolio['avg_revenue_per_customer'], 'green'),
-        ('Bank CAC\nSubsidy', params['bank_cac_subsidy'], 'green'),
-        ('Upfront\nCost', -portfolio['upfront_cost_per_customer'], 'red'),
-        ('Upfront\nNet', portfolio['upfront_net_per_customer'], 'green'),
-        ('Recurring\nCost', -portfolio['recurring_cost_per_customer'], 'red'),
-        ('MARGIN', portfolio['margin_per_customer'], 'blue'),
-    ]
+    # Calculate components based on scenario
+    if scenario == "Expected Case":
+        # Expected Case: Matches dashboard/report methodology
+        # Revenue components (all net of GST where applicable)
+        monthly_fee = params.get('monthly_fee', 599)
+        upfront_net = (params['mrp'] * (1 - params['subsidy_percent'])) / 1.18  # Rs 19,068
+        monthly_revenue = monthly_fee * 0.847 * tenure  # Rs 30,449
+        overage_revenue = 1200   # Simulation average
+        addon_revenue = 1500     # Extended warranty, services
+        bank_subsidy = params['bank_cac_subsidy']  # Rs 2,000
+
+        # Cost components (cash outflows)
+        upfront_cost = (params['manufacturing_cost'] + params['iot_cost'] +
+                       params['installation_cost'] + params['cac'])  # Rs 36,000 (excl warranty for cash)
+        recurring_cost = params['monthly_recurring_cost'] * tenure  # Rs 11,520
+        discount_cost = int(0.07 * monthly_fee * 0.847 * tenure)  # ~Rs 2,517
+
+        # Margin calculation (matches report ~Rs 6,454)
+        total_revenue = upfront_net + monthly_revenue + overage_revenue + addon_revenue
+        total_cost = upfront_cost + recurring_cost + discount_cost
+        margin = total_revenue - total_cost + bank_subsidy
+
+        items = [
+            ('Upfront\n(net GST)', upfront_net, 'green'),
+            ('Monthly\nRevenue', monthly_revenue, 'green'),
+            ('Overage', overage_revenue, 'green'),
+            ('Add-ons', addon_revenue, 'green'),
+            ('Bank\nSubsidy', bank_subsidy, 'green'),
+            ('Upfront\nCost', -upfront_cost, 'red'),
+            ('Recurring\nCost', -recurring_cost, 'red'),
+            ('Discount\nCost', -discount_cost, 'red'),
+            ('MARGIN', margin, 'blue'),
+        ]
+    else:
+        # Base Case: Conservative (original formula)
+        items = [
+            ('Revenue\n(60 months)', portfolio['avg_revenue_per_customer'], 'green'),
+            ('Bank CAC\nSubsidy', params['bank_cac_subsidy'], 'green'),
+            ('Upfront\nCost', -portfolio['upfront_cost_per_customer'], 'red'),
+            ('Upfront\nNet', portfolio['upfront_net_per_customer'], 'green'),
+            ('Recurring\nCost', -portfolio['recurring_cost_per_customer'], 'red'),
+            ('MARGIN', portfolio['margin_per_customer'], 'blue'),
+        ]
 
     # Calculate positions
     labels = [i[0] for i in items]
@@ -563,7 +618,7 @@ def plot_margin_waterfall(
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.set_ylabel('Amount (Rs)')
-    ax.set_title('Margin Waterfall — Per Customer Analysis')
+    ax.set_title(f'Margin Waterfall — Per Customer Analysis ({scenario})')
     ax.axhline(y=0, color='black', linewidth=0.5)
 
     # Add legend
@@ -594,7 +649,8 @@ def create_all_charts(
     grid: pd.DataFrame,
     output_dir: str = 'outputs/charts',
     params: Optional[Dict] = None,
-    show: bool = False
+    show: bool = False,
+    scenario: str = "Expected Case"
 ) -> Dict[str, str]:
     """
     Generate all 8 required charts and save to output directory.
@@ -604,6 +660,7 @@ def create_all_charts(
         output_dir: Directory to save charts (default: outputs/charts)
         params: Optional cost parameters for margin calculations
         show: Whether to display charts interactively
+        scenario: "Expected Case" (default, matches report) or "Base Case" (conservative)
 
     Returns:
         Dictionary mapping chart names to file paths
@@ -638,7 +695,7 @@ def create_all_charts(
 
     # Chart 5: Cumulative profit
     path = os.path.join(output_dir, '5_cumulative_profit.png')
-    plot_cumulative_profit(grid, params=params, save_path=path, show=show)
+    plot_cumulative_profit(grid, params=params, save_path=path, show=show, scenario=scenario)
     paths['cumulative_profit'] = path
     plt.close()
 
@@ -656,7 +713,7 @@ def create_all_charts(
 
     # Chart 8: Margin waterfall
     path = os.path.join(output_dir, '8_margin_waterfall.png')
-    plot_margin_waterfall(grid, params=params, save_path=path, show=show)
+    plot_margin_waterfall(grid, params=params, save_path=path, show=show, scenario=scenario)
     paths['margin_waterfall'] = path
     plt.close()
 

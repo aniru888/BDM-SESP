@@ -25,13 +25,61 @@ from enum import Enum
 # SUBSCRIPTION PLANS
 # =============================================================================
 
+# =============================================================================
+# SEASONAL HOURS (synchronized with simulator.py)
+# =============================================================================
+# Season definitions (month index 0-11 → season)
+SEASONS = {
+    0: 'winter',   # Jan
+    1: 'winter',   # Feb
+    2: 'shoulder', # Mar
+    3: 'shoulder', # Apr
+    4: 'summer',   # May
+    5: 'summer',   # Jun
+    6: 'summer',   # Jul
+    7: 'summer',   # Aug
+    8: 'shoulder', # Sep
+    9: 'shoulder', # Oct
+    10: 'winter',  # Nov
+    11: 'winter',  # Dec
+}
+
+SEASONAL_PLAN_HOURS = {
+    'lite': {
+        'winter': 35,
+        'shoulder': 90,
+        'summer': 140,
+        # Annual: 35*4 + 90*4 + 140*4 = 1,060 hrs (~88 hrs/month avg)
+    },
+    'standard': {
+        'winter': 70,
+        'shoulder': 180,
+        'summer': 280,
+        # Annual: 70*4 + 180*4 + 280*4 = 2,120 hrs (~177 hrs/month avg)
+    },
+    'premium': {
+        'winter': 120,
+        'shoulder': 320,
+        'summer': 480,
+        # Annual: 120*4 + 320*4 + 480*4 = 3,680 hrs (~307 hrs/month avg)
+    },
+}
+
+
+def get_seasonal_hours(plan: str, month: int) -> int:
+    """Get included hours for a plan in a given month (0=Jan, 11=Dec)."""
+    season = SEASONS[month % 12]
+    return SEASONAL_PLAN_HOURS[plan][season]
+
+
 SUBSCRIPTION_PLANS: Dict[str, Dict[str, Any]] = {
-    'light': {
-        'name': 'Light User Plan',
-        'monthly_fee': 499,
-        'hours_included': 150,  # ~5 hours/day for 30 days
-        'overage_per_hour': 5,
-        'max_overage': 200,  # Cap to prevent bill shock
+    'lite': {
+        'name': 'Lite Plan',
+        'monthly_fee': 449,
+        'hours_included': 88,  # Annual average (~35+90+140)/3 seasons
+        'seasonal_hours': SEASONAL_PLAN_HOURS['lite'],
+        'overage_per_hour': 6,
+        'max_overage': 150,  # Cap to prevent bill shock
         'target_customer': [
             'Bedroom only use',
             'Working couple (out during day)',
@@ -45,12 +93,13 @@ SUBSCRIPTION_PLANS: Dict[str, Dict[str, Any]] = {
             'Email support'
         ]
     },
-    'moderate': {
-        'name': 'Comfort Plan',
-        'monthly_fee': 649,
-        'hours_included': 225,  # ~7.5 hours/day
-        'overage_per_hour': 4,
-        'max_overage': 250,
+    'standard': {
+        'name': 'Standard Plan',
+        'monthly_fee': 599,
+        'hours_included': 177,  # Annual average
+        'seasonal_hours': SEASONAL_PLAN_HOURS['standard'],
+        'overage_per_hour': 5,
+        'max_overage': 200,
         'target_customer': [
             'Family with children',
             'Hot climate (Delhi NCR, Chennai)',
@@ -65,12 +114,13 @@ SUBSCRIPTION_PLANS: Dict[str, Dict[str, Any]] = {
             '1 free gas top-up during tenure'
         ]
     },
-    'heavy': {
-        'name': 'Power User Plan',
-        'monthly_fee': 899,
-        'hours_included': 350,  # ~11.5 hours/day
-        'overage_per_hour': 3,
-        'max_overage': 300,
+    'premium': {
+        'name': 'Premium Plan',
+        'monthly_fee': 799,
+        'hours_included': 307,  # Annual average
+        'seasonal_hours': SEASONAL_PLAN_HOURS['premium'],
+        'overage_per_hour': 0,  # No overage for premium
+        'max_overage': 0,  # Unlimited
         'target_customer': [
             'Work from home professional',
             'Joint family / large household',
@@ -88,6 +138,11 @@ SUBSCRIPTION_PLANS: Dict[str, Dict[str, Any]] = {
         ]
     }
 }
+
+# Backward compatibility aliases (for any code using old plan names)
+SUBSCRIPTION_PLANS['light'] = SUBSCRIPTION_PLANS['lite']
+SUBSCRIPTION_PLANS['moderate'] = SUBSCRIPTION_PLANS['standard']
+SUBSCRIPTION_PLANS['heavy'] = SUBSCRIPTION_PLANS['premium']
 
 
 # =============================================================================

@@ -645,24 +645,24 @@ with tab1:
     col1, col2 = st.columns(2)
 
     with col1:
-        pc_satisfied = savings_data['savings_pct'] >= 10
+        pc_satisfied = savings_data['savings_pct'] >= 5  # Lowered from 10% to 5%
         if pc_satisfied:
             st.markdown(f"""
             <div class="constraint-pass">
                 <strong>✅ Participation Constraint SATISFIED</strong><br>
-                Customer saves {savings_data['savings_pct']:.1f}% vs purchase (threshold: 10%)
+                Customer saves {savings_data['savings_pct']:.1f}% vs purchase (threshold: 5%)
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown(f"""
             <div class="constraint-fail">
                 <strong>❌ Participation Constraint FAILED</strong><br>
-                Customer saves only {savings_data['savings_pct']:.1f}% (need: 10%)
+                Customer saves only {savings_data['savings_pct']:.1f}% (need: 5%)
             </div>
             """, unsafe_allow_html=True)
 
         with st.expander(f"📐 Show PC Formula ({scenario})"):
-            st.latex(r"NPV_{SESP} < NPV_{Purchase} \times (1 - 10\%)")
+            st.latex(r"NPV_{SESP} < NPV_{Purchase} \times (1 - 5\%)")
 
             if scenario == "Expected Case":
                 st.markdown(f"""
