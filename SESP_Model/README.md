@@ -1,5 +1,23 @@
 # SESP Model: Smart Energy-Saver Subscription Program
 
+> **BDM Project Submission — Anirudh Mohan**
+>
+> This repository contains the complete code and analysis for the SESP (Smart Energy-Saver Subscription Program) pricing model. The simulation generates **hypothetical usage data** for 1,000 customers over 60 months (60,000 data points) to demonstrate the economic viability of a subscription-based appliance model.
+>
+> **Quick Start:**
+> ```bash
+> cd SESP_Model
+> pip install -r requirements.txt
+> python main.py
+> ```
+>
+> **Key Outputs:**
+> - `data/` — Simulation results (CSV files with customer billing data)
+> - `outputs/charts/` — 8 visualizations (usage, billing, cash flow, etc.)
+> - `outputs/SESP_Final_Report.md` — Full technical analysis
+
+---
+
 A dynamic pricing simulation and optimization model for IoT-enabled home appliances in India.
 
 ## Overview
