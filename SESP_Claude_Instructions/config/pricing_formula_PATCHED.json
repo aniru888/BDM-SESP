@@ -1,0 +1,315 @@
+{
+  "_VERSION": "2.0 - Bucket Model + Efficiency Score",
+  "_PREVIOUS_VERSION": "1.0 had tier premium model (still problematic)",
+  "_KEY_CHANGES": [
+    "Replaced tier premium with runtime hour BUCKETS (like mobile data)",
+    "Replaced usage-based reward with EFFICIENCY SCORE",
+    "Overage is for exceeding hours, not for using electricity",
+    "Rewards are DISCOUNTS (positive framing), not penalty avoidance"
+  ],
+
+  "subscription_plans": {
+    "_model_type": "Mobile Data Bucket Model",
+    "_rationale": "Customer buys ACCESS (hours), not electricity. Within bucket, usage feels free. Overage is understood (like mobile data). Customer self-selects into efficient plan.",
+
+    "AC_plans": {
+      "light": {
+        "plan_name": "Light User Plan",
+        "monthly_fee_base": 499,
+        "hours_included": 150,
+        "hours_per_day_equivalent": 5.0,
+        "overage_fee_per_hour": 5,
+        "max_overage_fee": 200,
+        "target_customer": [
+          "Bedroom only use",
+          "Working couple (out during day)",
+          "Mild climate (Bangalore, Pune)",
+          "First AC, budget-conscious"
+        ],
+        "what_fee_covers": [
+          "2 service visits per year",
+          "Basic IoT monitoring",
+          "Standard warranty extension",
+          "Email support"
+        ]
+      },
+
+      "moderate": {
+        "plan_name": "Comfort Plan",
+        "monthly_fee_base": 649,
+        "hours_included": 225,
+        "hours_per_day_equivalent": 7.5,
+        "overage_fee_per_hour": 4,
+        "max_overage_fee": 250,
+        "target_customer": [
+          "Family with children",
+          "Hot climate (Delhi NCR, Chennai)",
+          "Living room + bedroom use",
+          "Replacing old AC"
+        ],
+        "what_fee_covers": [
+          "3 service visits per year",
+          "Advanced IoT with app",
+          "Comprehensive warranty extension",
+          "Priority phone support",
+          "1 free gas top-up during tenure"
+        ]
+      },
+
+      "heavy": {
+        "plan_name": "Power User Plan",
+        "monthly_fee_base": 899,
+        "hours_included": 350,
+        "hours_per_day_equivalent": 11.7,
+        "overage_fee_per_hour": 3,
+        "max_overage_fee": 300,
+        "target_customer": [
+          "Work from home professional",
+          "Joint family / large household",
+          "Extreme climate (Rajasthan, Vidarbha)",
+          "Multiple rooms served",
+          "Elderly with health needs"
+        ],
+        "what_fee_covers": [
+          "Unlimited service visits",
+          "Premium IoT with predictive alerts",
+          "Full warranty extension",
+          "4-hour response SLA",
+          "2 free gas top-ups during tenure",
+          "Priority replacement if repair >48hrs"
+        ]
+      }
+    },
+
+    "FRIDGE_plans": {
+      "_note": "Fridge runs 24/7, so hours bucket doesn't apply. Use efficiency score only.",
+      "light": {
+        "plan_name": "Basic Care",
+        "monthly_fee_base": 299,
+        "runtime_model": "Always on (no hour bucket)",
+        "efficiency_metric": "temperature_stability_and_door_discipline",
+        "target_customer": "Small family, minimal cooking"
+      },
+      "moderate": {
+        "plan_name": "Family Care",
+        "monthly_fee_base": 399,
+        "runtime_model": "Always on",
+        "target_customer": "Medium family, regular cooking"
+      },
+      "heavy": {
+        "plan_name": "Extended Family Care",
+        "monthly_fee_base": 549,
+        "runtime_model": "Always on",
+        "target_customer": "Large family, high usage"
+      }
+    }
+  },
+
+  "overage_mechanism": {
+    "_rationale": "Overage = exceeded your plan (understood like mobile data). NOT a tax on usage.",
+
+    "how_it_works": {
+      "step_1": "IoT tracks runtime hours (not kWh)",
+      "step_2": "If hours > plan.hours_included, overage kicks in",
+      "step_3": "Overage = excess_hours × overage_rate, capped at max",
+      "step_4": "Customer sees: 'You used 180 hours on 150-hour plan. Extra wear charge: ₹150'"
+    },
+
+    "why_hours_not_kwh": {
+      "hours": "Measure of appliance wear (our cost domain)",
+      "kwh": "Measure of electricity used (Discom's domain)",
+      "rationale": "We charge for WEAR on our machine, not for electricity you consumed"
+    },
+
+    "example": {
+      "plan": "light",
+      "hours_included": 150,
+      "actual_hours": 180,
+      "excess_hours": 30,
+      "overage_rate": 5,
+      "calculated_overage": 150,
+      "max_overage": 200,
+      "final_overage": 150,
+      "message": "You used 180 hours this month (plan includes 150). Extra usage fee: ₹150"
+    }
+  },
+
+  "efficiency_score_mechanism": {
+    "_rationale": "Reward BEHAVIOR (efficiency), not OUTCOME (low usage). A Chennai family using AC 10 hours efficiently should be rewarded.",
+
+    "goal": "Stop WASTAGE, not USAGE",
+
+    "what_it_measures": {
+      "temperature_discipline": {
+        "weight": 0.60,
+        "description": "Did they keep set temp at efficient level (24°C+)?",
+        "why_important": "Running at 16°C vs 24°C = 3x electricity for same hours",
+        "scoring": {
+          "24C_or_higher": 100,
+          "22C_to_24C": 80,
+          "20C_to_22C": 50,
+          "18C_to_20C": 25,
+          "below_18C": 0
+        }
+      },
+      "schedule_discipline": {
+        "weight": 0.25,
+        "description": "Did they use timer/scheduling features?",
+        "why_important": "Timer prevents forgotten-on AC (major waste)",
+        "scoring": "timer_usage_percent × 1.2, capped at 100"
+      },
+      "anomaly_avoidance": {
+        "weight": 0.15,
+        "description": "Avoided wasteful behaviors",
+        "events_tracked": ["door_open_while_running", "hours_below_20C", "no_timer_overnight"],
+        "penalty_per_event": 3
+      }
+    },
+
+    "reward_tiers": {
+      "champion": {
+        "score_threshold": 90,
+        "discount_percent": 20,
+        "badge": "Efficiency Champion 🏆",
+        "message": "Amazing! You're in the top 10% of efficient users!"
+      },
+      "star": {
+        "score_threshold": 75,
+        "discount_percent": 12,
+        "badge": "Efficiency Star ⭐",
+        "message": "Great job! You're using your AC smartly."
+      },
+      "aware": {
+        "score_threshold": 60,
+        "discount_percent": 5,
+        "badge": "Efficiency Aware 🌱",
+        "message": "Good start! Small changes can get you to Star level."
+      },
+      "improving": {
+        "score_threshold": 0,
+        "discount_percent": 0,
+        "badge": "Room to Improve",
+        "message": "Try setting temp to 24°C to start earning rewards!"
+      }
+    },
+
+    "psychological_framing": {
+      "key_principle": "People HATE fees (pain). People LOVE discounts (gain).",
+      "WRONG_approach": "You ran AC at 18°C. Penalty: ₹100",
+      "RIGHT_approach": "Your Efficiency Score: 85! You earned ₹78 off! Next month, try 24°C to earn ₹120+",
+      "result": "Customer actively tries to EARN the discount → energy savings achieved"
+    }
+  },
+
+  "monthly_bill_calculation": {
+    "formula": "Bill = (Base_Fee + Overage - Efficiency_Discount) × 1.18",
+
+    "example_scenarios": {
+      "best_case": {
+        "description": "Light user, stayed within hours, high efficiency",
+        "plan": "light",
+        "base_fee": 499,
+        "hours_used": 120,
+        "overage": 0,
+        "efficiency_score": 92,
+        "efficiency_discount": 100,
+        "bill_before_gst": 399,
+        "bill_with_gst": 471
+      },
+      "typical_case": {
+        "description": "Moderate user, within hours, decent efficiency",
+        "plan": "moderate",
+        "base_fee": 649,
+        "hours_used": 210,
+        "overage": 0,
+        "efficiency_score": 72,
+        "efficiency_discount": 78,
+        "bill_before_gst": 571,
+        "bill_with_gst": 674
+      },
+      "overage_case": {
+        "description": "Moderate user, exceeded hours, low efficiency",
+        "plan": "moderate",
+        "base_fee": 649,
+        "hours_used": 280,
+        "overage_hours": 55,
+        "overage": 220,
+        "efficiency_score": 45,
+        "efficiency_discount": 0,
+        "bill_before_gst": 869,
+        "bill_with_gst": 1025,
+        "recommendation": "Consider upgrading to Power User plan"
+      }
+    }
+  },
+
+  "upfront_pricing": {
+    "AC_1.5T_5STAR_INVERTER": {
+      "mrp": 45000,
+      "sesp_upfront_price": 32000,
+      "subsidy_amount": 13000,
+      "deposit_refundable": 5000,
+      "customer_pays_at_signup": 37000,
+      "note": "Deposit returned at end of tenure (minus any damages)"
+    },
+    "FRIDGE_280L_FROST_FREE": {
+      "mrp": 30000,
+      "sesp_upfront_price": 22000,
+      "subsidy_amount": 8000,
+      "deposit_refundable": 3000,
+      "customer_pays_at_signup": 25000
+    }
+  },
+
+  "tenure_options": {
+    "12_months": {
+      "available": true,
+      "fee_multiplier": 1.15,
+      "note": "Higher fee to compensate for shorter recovery period"
+    },
+    "24_months": {
+      "available": true,
+      "fee_multiplier": 1.00,
+      "note": "Standard tenure, base pricing"
+    },
+    "36_months": {
+      "available": true,
+      "fee_multiplier": 0.90,
+      "note": "Lower fee for longer commitment"
+    }
+  },
+
+  "self_selection_mechanism": {
+    "how_it_achieves_energy_savings": {
+      "step_1": "Customer sees: Light ₹499 vs Moderate ₹649 vs Heavy ₹899",
+      "step_2": "Customer thinks: 'Can I fit in Light? That's ₹150/month savings!'",
+      "step_3": "Customer budgets usage: 'I'll turn off when not home, use timer, set 24°C'",
+      "step_4": "Result: Customer VOLUNTARILY reduces usage to fit cheaper plan",
+      "outcome": "Energy savings achieved WITHOUT punishment"
+    },
+    "anti_gaming": {
+      "concern": "What if customer picks Light but uses Heavy?",
+      "solution": "Overage fees make this expensive. Better to pick right plan.",
+      "example": "Light plan + 100 excess hours = ₹499 + ₹500 = ₹999. Heavy plan = ₹899. Heavy is cheaper."
+    }
+  },
+
+  "key_distinctions": {
+    "what_customer_pays_to_sesp": [
+      "Subsidized upfront price (one-time)",
+      "Monthly plan fee (bucket access)",
+      "Overage if hours exceeded",
+      "Minus efficiency discount earned"
+    ],
+    "what_customer_pays_to_discom": [
+      "Electricity bill based on kWh consumed",
+      "Fixed charges",
+      "This is SEPARATE - we don't touch this"
+    ],
+    "why_no_double_charging": {
+      "SESP_charges_for": "Access (hours), wear & tear, maintenance, warranty, IoT, support",
+      "Discom_charges_for": "Electricity consumed (kWh)",
+      "they_are": "Different things. No overlap."
+    }
+  }
+}

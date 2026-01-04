@@ -1,0 +1,142 @@
+{
+  "electricity": {
+    "rates_by_state": {
+      "delhi": {
+        "slabs": [
+          {"limit_kwh": 200, "rate_per_kwh": 3.0},
+          {"limit_kwh": 400, "rate_per_kwh": 4.5},
+          {"limit_kwh": 800, "rate_per_kwh": 6.5},
+          {"limit_kwh": 1200, "rate_per_kwh": 7.0},
+          {"limit_kwh": 999999, "rate_per_kwh": 8.0}
+        ],
+        "fixed_charge_per_kw": 125
+      },
+      "maharashtra": {
+        "slabs": [
+          {"limit_kwh": 100, "rate_per_kwh": 4.0},
+          {"limit_kwh": 300, "rate_per_kwh": 7.5},
+          {"limit_kwh": 500, "rate_per_kwh": 10.0},
+          {"limit_kwh": 999999, "rate_per_kwh": 12.0}
+        ],
+        "fixed_charge_per_kw": 150
+      },
+      "karnataka": {
+        "slabs": [
+          {"limit_kwh": 50, "rate_per_kwh": 4.1},
+          {"limit_kwh": 100, "rate_per_kwh": 5.5},
+          {"limit_kwh": 200, "rate_per_kwh": 7.0},
+          {"limit_kwh": 999999, "rate_per_kwh": 8.2}
+        ],
+        "fixed_charge_per_kw": 100
+      }
+    },
+    "simplified_average": {
+      "low_consumption": 4.0,
+      "medium_consumption": 6.0,
+      "high_consumption": 7.5,
+      "default": 6.0
+    },
+    "annual_inflation_rate": 0.04,
+    "notes": "Slab-based pricing means heavy users pay more per kWh. Energy savings have multiplied benefit."
+  },
+  
+  "taxes": {
+    "gst_on_appliances": 0.18,
+    "gst_on_services": 0.18,
+    "notes": "Subscription attracts GST on each invoice, creating tax leakage vs one-time purchase"
+  },
+  
+  "alternatives": {
+    "outright_purchase": {
+      "ac_mrp_range": {"min": 42000, "max": 48000},
+      "fridge_mrp_range": {"min": 28000, "max": 32000},
+      "financing_available": true
+    },
+    "emi_purchase": {
+      "interest_rate_annual": 0.14,
+      "tenures_available_months": [6, 9, 12, 18, 24],
+      "processing_fee_percent": 0.02,
+      "providers": ["Bajaj Finserv", "HDFC", "ICICI", "Kotak"],
+      "monthly_emi_ac_12m": {"min": 3800, "max": 4200},
+      "monthly_emi_ac_24m": {"min": 2100, "max": 2400}
+    },
+    "rental": {
+      "providers": ["Rentomojo", "Furlenco", "RentoMojo", "GrabOnRent"],
+      "ac_monthly_rent": {"min": 1200, "max": 1800},
+      "fridge_monthly_rent": {"min": 600, "max": 1000},
+      "security_deposit_months": 2,
+      "minimum_tenure_months": 3,
+      "condition": "often_refurbished",
+      "maintenance": "included",
+      "notes": "Rental market exists but perceived as 'used goods' and 'temporary'"
+    },
+    "amc": {
+      "ac_annual_cost": {"min": 2000, "max": 3500},
+      "fridge_annual_cost": {"min": 1000, "max": 2000},
+      "includes": ["2_visits", "cleaning", "minor_repairs"],
+      "excludes": ["major_parts", "gas_refill", "compressor"]
+    },
+    "extended_warranty": {
+      "ac_3year_cost": {"min": 3000, "max": 5000},
+      "fridge_3year_cost": {"min": 2000, "max": 3500},
+      "providers": ["OEM", "OneAssist", "Onsitego"]
+    }
+  },
+  
+  "customer_acquisition": {
+    "marketing_cost_per_customer": {"min": 800, "max": 2000},
+    "sales_commission_per_unit": {"min": 500, "max": 1500},
+    "demo_trial_cost": {"min": 200, "max": 500},
+    "total_cac_estimate": 2000,
+    "cac_confidence": "low",
+    "notes": "CAC varies significantly by channel. Online lower, offline higher."
+  },
+  
+  "additional_revenue_opportunities": {
+    "data_monetization": {
+      "annual_value_per_unit": {"min": 200, "max": 500},
+      "confidence": "low",
+      "notes": "Aggregated usage patterns for grid planning, research"
+    },
+    "addon_products": {
+      "stabilizer": {"margin": 800, "attachment_rate": 0.15},
+      "air_purifier": {"margin": 1500, "attachment_rate": 0.05},
+      "smart_plug": {"margin": 400, "attachment_rate": 0.10},
+      "average_attachment_value": 500
+    },
+    "referrals": {
+      "referral_rate": 0.12,
+      "referral_value": 500,
+      "notes": "Value = CAC savings from organic acquisition"
+    },
+    "upgrade_retention": {
+      "upgrade_rate_year_3": 0.15,
+      "upgrade_revenue": 2000,
+      "notes": "Customer upgrades to newer model, pays reduced price"
+    }
+  },
+  
+  "risk_parameters": {
+    "customer_default_rate_annual": {
+      "low_risk_segment": 0.02,
+      "medium_risk_segment": 0.04,
+      "high_risk_segment": 0.06,
+      "default": 0.04
+    },
+    "churn_rate_annual": {
+      "satisfied_customer": 0.05,
+      "neutral_customer": 0.10,
+      "dissatisfied_customer": 0.25,
+      "default": 0.10
+    },
+    "asset_damage_rate_annual": 0.03,
+    "theft_fraud_rate": 0.005,
+    "collection_cost_per_default": 3000
+  },
+  
+  "inflation_assumptions": {
+    "electricity_annual": 0.04,
+    "maintenance_annual": 0.05,
+    "general_cpi": 0.05
+  }
+}

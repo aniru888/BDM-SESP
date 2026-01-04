@@ -1,0 +1,162 @@
+{
+  "AC_1.5T_5STAR_INVERTER": {
+    "name": "1.5 Ton 5-Star Inverter Split AC",
+    "category": "air_conditioner",
+    "mrp": 45000,
+    "mrp_range": {"min": 42000, "max": 48000},
+    "manufacturing_cost": 30000,
+    "manufacturing_cost_confidence": "medium",
+    "manufacturing_cost_notes": "Based on 6.5-7.5% industry OPM and 60% cost-to-MRP ratio",
+    
+    "installation": {
+      "cost": 2500,
+      "cost_range": {"min": 2000, "max": 4000},
+      "includes": ["mounting", "copper_piping_3m", "electrical_connection"],
+      "additional_charges": {
+        "extra_piping_per_meter": 350,
+        "stabilizer_if_needed": 2500,
+        "electrical_upgrade_if_needed": 3000
+      }
+    },
+    
+    "iot": {
+      "hardware_cost": 1500,
+      "hardware_cost_range": {"min": 1100, "max": 2200},
+      "hardware_components": {
+        "energy_sensor": 500,
+        "communication_module": 400,
+        "mcu_processing": 300,
+        "enclosure_wiring": 300
+      },
+      "annual_recurring": 600,
+      "recurring_breakdown": {
+        "connectivity": 360,
+        "cloud_platform": 240
+      }
+    },
+    
+    "maintenance": {
+      "annual_cost_to_company": 1200,
+      "annual_cost_range": {"min": 800, "max": 1500},
+      "includes": ["2_service_visits", "filter_cleaning", "gas_check"],
+      "excludes": ["gas_topup", "part_replacement"]
+    },
+    
+    "warranty": {
+      "standard_comprehensive_years": 1,
+      "standard_compressor_years": 5,
+      "extended_comprehensive_years": 3,
+      "warranty_reserve_per_unit": 2000,
+      "warranty_claim_rate_year1": 0.10,
+      "warranty_claim_rate_year2_5": 0.05
+    },
+    
+    "lifespan": {
+      "expected_years": 10,
+      "subscription_viable_years": 7,
+      "notes": "Exit subscription before major compressor issues likely"
+    },
+    
+    "terminal_value": {
+      "year_3": 12000,
+      "year_5": 5000,
+      "year_7": 2500,
+      "year_10": 1500,
+      "notes": "AC resale weak due to installation complexity; often scrap value"
+    },
+    
+    "energy": {
+      "rated_power_kw": 1.5,
+      "typical_running_power_kw": 0.9,
+      "bee_annual_kwh": 950,
+      "baseline_annual_kwh": {
+        "light": 500,
+        "moderate": 1100,
+        "heavy": 1800
+      },
+      "baseline_assumptions": {
+        "light": "4-5 hrs/day, 100-120 days, bedroom only",
+        "moderate": "7-9 hrs/day, 140-160 days, main room",
+        "heavy": "10-14 hrs/day, 160-200 days, multiple rooms or WFH"
+      }
+    },
+    
+    "seasonality": {
+      "north_india": [0.05, 0.15, 0.60, 1.40, 1.70, 1.30, 0.80, 0.70, 0.80, 0.50, 0.15, 0.05],
+      "south_india": [0.40, 0.50, 0.80, 1.20, 1.30, 1.10, 0.90, 0.90, 0.90, 0.70, 0.50, 0.40],
+      "west_india": [0.20, 0.30, 0.70, 1.30, 1.50, 1.20, 0.80, 0.80, 0.90, 0.60, 0.30, 0.20],
+      "east_india": [0.15, 0.25, 0.65, 1.35, 1.60, 1.25, 0.85, 0.85, 0.90, 0.55, 0.25, 0.15],
+      "month_labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    }
+  },
+  
+  "FRIDGE_280L_FROST_FREE": {
+    "name": "280L Frost-Free Double Door Refrigerator",
+    "category": "refrigerator",
+    "mrp": 30000,
+    "mrp_range": {"min": 28000, "max": 32000},
+    "manufacturing_cost": 19500,
+    "manufacturing_cost_confidence": "medium",
+    
+    "installation": {
+      "cost": 0,
+      "notes": "Plug and play, customer can self-install"
+    },
+    
+    "iot": {
+      "hardware_cost": 1500,
+      "hardware_cost_range": {"min": 1100, "max": 2000},
+      "annual_recurring": 600
+    },
+    
+    "maintenance": {
+      "annual_cost_to_company": 500,
+      "annual_cost_range": {"min": 300, "max": 800},
+      "includes": ["annual_checkup", "cleaning"],
+      "notes": "Refrigerators need minimal maintenance"
+    },
+    
+    "warranty": {
+      "standard_comprehensive_years": 1,
+      "standard_compressor_years": 10,
+      "extended_comprehensive_years": 3,
+      "warranty_reserve_per_unit": 1200,
+      "warranty_claim_rate_year1": 0.06,
+      "warranty_claim_rate_year2_5": 0.03
+    },
+    
+    "lifespan": {
+      "expected_years": 12,
+      "subscription_viable_years": 10
+    },
+    
+    "terminal_value": {
+      "year_3": 10000,
+      "year_5": 6000,
+      "year_7": 4000,
+      "year_10": 2500,
+      "notes": "Better resale than AC due to plug-and-play nature"
+    },
+    
+    "energy": {
+      "rated_power_kw": 0.18,
+      "typical_running_power_kw": 0.06,
+      "bee_annual_kwh": 250,
+      "baseline_annual_kwh": {
+        "light": 220,
+        "moderate": 300,
+        "heavy": 400
+      },
+      "baseline_assumptions": {
+        "light": "Small family, good practices, minimal door opening",
+        "moderate": "Medium family, standard use",
+        "heavy": "Large family or hot climate or frequent access"
+      }
+    },
+    
+    "seasonality": {
+      "all_regions": [0.95, 0.95, 1.00, 1.05, 1.10, 1.10, 1.05, 1.05, 1.00, 1.00, 0.95, 0.95],
+      "notes": "Nearly flat; slight summer increase due to more cold drinks, door opening"
+    }
+  }
+}

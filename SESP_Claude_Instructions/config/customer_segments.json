@@ -1,0 +1,245 @@
+{
+  "segmentation_approach": {
+    "philosophy": "Segment by observable characteristics that predict usage. Customer knows their intention; we don't. Design plans for self-selection.",
+    "observable_at_signup": [
+      "city_location",
+      "house_type_size",
+      "family_size",
+      "existing_appliances",
+      "stated_primary_use",
+      "occupation_type"
+    ],
+    "not_observable": [
+      "actual_hours_of_use",
+      "temperature_preferences",
+      "behavioral_discipline"
+    ]
+  },
+  
+  "usage_segments": {
+    "light": {
+      "name": "Light User",
+      "proportion": 0.30,
+      "proportion_range": {"min": 0.25, "max": 0.35},
+      
+      "observable_characteristics": [
+        "Mild climate region (Bangalore, Pune)",
+        "Working couple, both out during day",
+        "Bedroom-only planned use",
+        "Rented 1BHK accommodation",
+        "First AC purchase (price-sensitive)"
+      ],
+      
+      "ac_usage": {
+        "annual_kwh": 500,
+        "annual_kwh_range": {"min": 400, "max": 600},
+        "hours_per_day": 4.5,
+        "days_per_year": 110,
+        "typical_pattern": "Evening and night only, 4 months"
+      },
+      
+      "fridge_usage": {
+        "annual_kwh": 220,
+        "annual_kwh_range": {"min": 200, "max": 250},
+        "typical_pattern": "Small family, less frequent door opening"
+      },
+      
+      "behavioral_profile": {
+        "price_sensitivity": "high",
+        "discount_rate": 0.28,
+        "discount_rate_notes": "Cash-constrained, high opportunity cost",
+        "churn_risk": "medium",
+        "default_risk": 0.035,
+        "energy_savings_achievable": 0.08,
+        "feature_engagement": "low",
+        "referral_likelihood": 0.08
+      },
+      
+      "value_perception": {
+        "most_valued": ["low_upfront_cost", "basic_maintenance"],
+        "least_valued": ["premium_features", "detailed_analytics"],
+        "price_ceiling_monthly": 500
+      }
+    },
+    
+    "moderate": {
+      "name": "Moderate User",
+      "proportion": 0.50,
+      "proportion_range": {"min": 0.45, "max": 0.55},
+      
+      "observable_characteristics": [
+        "Hot climate region (Delhi, Chennai)",
+        "Family with kids",
+        "2-3 BHK apartment",
+        "1-2 existing ACs in household",
+        "Replacing old AC or adding second unit"
+      ],
+      
+      "ac_usage": {
+        "annual_kwh": 1100,
+        "annual_kwh_range": {"min": 900, "max": 1300},
+        "hours_per_day": 8,
+        "days_per_year": 150,
+        "typical_pattern": "Evening, night, weekends, 5 months"
+      },
+      
+      "fridge_usage": {
+        "annual_kwh": 300,
+        "annual_kwh_range": {"min": 270, "max": 350},
+        "typical_pattern": "Standard family use, daily cooking"
+      },
+      
+      "behavioral_profile": {
+        "price_sensitivity": "medium",
+        "discount_rate": 0.22,
+        "churn_risk": "low",
+        "default_risk": 0.025,
+        "energy_savings_achievable": 0.15,
+        "feature_engagement": "medium",
+        "referral_likelihood": 0.15
+      },
+      
+      "value_perception": {
+        "most_valued": ["energy_savings", "maintenance_included", "warranty"],
+        "least_valued": ["status_features"],
+        "price_ceiling_monthly": 800
+      }
+    },
+    
+    "heavy": {
+      "name": "Heavy User",
+      "proportion": 0.20,
+      "proportion_range": {"min": 0.15, "max": 0.25},
+      
+      "observable_characteristics": [
+        "Extreme hot climate (Rajasthan, Vidarbha)",
+        "Work from home professional",
+        "Joint family or large household",
+        "Independent house with multiple rooms",
+        "Elderly family members with health needs",
+        "Already owns 2+ ACs"
+      ],
+      
+      "ac_usage": {
+        "annual_kwh": 1800,
+        "annual_kwh_range": {"min": 1600, "max": 2200},
+        "hours_per_day": 12,
+        "days_per_year": 180,
+        "typical_pattern": "Extended hours, multiple rooms, 6 months"
+      },
+      
+      "fridge_usage": {
+        "annual_kwh": 400,
+        "annual_kwh_range": {"min": 350, "max": 480},
+        "typical_pattern": "Large family, bulk storage, frequent access"
+      },
+      
+      "behavioral_profile": {
+        "price_sensitivity": "low",
+        "discount_rate": 0.16,
+        "discount_rate_notes": "Higher income, lower opportunity cost",
+        "churn_risk": "low",
+        "default_risk": 0.02,
+        "energy_savings_achievable": 0.20,
+        "feature_engagement": "high",
+        "referral_likelihood": 0.18
+      },
+      
+      "value_perception": {
+        "most_valued": ["reliability", "premium_service", "comprehensive_coverage"],
+        "least_valued": ["budget_positioning"],
+        "price_ceiling_monthly": 1200
+      }
+    }
+  },
+  
+  "geographic_segments": {
+    "metro": {
+      "cities": ["Delhi", "Mumbai", "Bangalore", "Chennai", "Kolkata", "Hyderabad"],
+      "characteristics": {
+        "electricity_rate": "high",
+        "service_network": "dense",
+        "price_sensitivity": "medium",
+        "subscription_acceptance": "higher",
+        "credit_access": "good"
+      }
+    },
+    "tier_2": {
+      "cities": ["Pune", "Jaipur", "Lucknow", "Ahmedabad", "Chandigarh", "Coimbatore"],
+      "characteristics": {
+        "electricity_rate": "medium",
+        "service_network": "adequate",
+        "price_sensitivity": "high",
+        "subscription_acceptance": "medium",
+        "credit_access": "moderate"
+      }
+    },
+    "tier_3": {
+      "cities": ["Indore", "Patna", "Ranchi", "Bhopal", "Varanasi", "Nagpur"],
+      "characteristics": {
+        "electricity_rate": "low_to_medium",
+        "service_network": "sparse",
+        "price_sensitivity": "very_high",
+        "subscription_acceptance": "lower",
+        "credit_access": "limited",
+        "voltage_fluctuation_risk": "high"
+      }
+    }
+  },
+  
+  "housing_segments": {
+    "owned_apartment": {
+      "proportion": 0.40,
+      "tenure_stability": "high",
+      "installation_constraints": "low",
+      "subscription_fit": "good"
+    },
+    "rented_apartment": {
+      "proportion": 0.30,
+      "tenure_stability": "medium",
+      "average_stay_months": 24,
+      "installation_constraints": "medium",
+      "subscription_fit": "very_good",
+      "notes": "Renters value flexibility, may prefer shorter tenure"
+    },
+    "independent_house_owned": {
+      "proportion": 0.20,
+      "tenure_stability": "very_high",
+      "installation_constraints": "low",
+      "subscription_fit": "medium",
+      "notes": "Strong ownership preference, may resist subscription"
+    },
+    "independent_house_rented": {
+      "proportion": 0.10,
+      "tenure_stability": "medium",
+      "installation_constraints": "high",
+      "subscription_fit": "good"
+    }
+  },
+  
+  "discount_rate_framework": {
+    "firm": {
+      "rate": 0.12,
+      "rationale": "WACC for large appliance manufacturer, 10-14% typical"
+    },
+    "customer_by_income": {
+      "affluent_2L_plus": {
+        "rate": 0.14,
+        "rationale": "Has savings, lower opportunity cost"
+      },
+      "upper_middle_1_2L": {
+        "rate": 0.20,
+        "rationale": "Some savings, moderate cash constraint"
+      },
+      "middle_50K_1L": {
+        "rate": 0.25,
+        "rationale": "Cash-constrained, high implicit borrowing rate"
+      },
+      "lower_middle_30_50K": {
+        "rate": 0.30,
+        "rationale": "Very cash-constrained, limited credit access"
+      }
+    },
+    "notes": "Dual discount rate creates value arbitrage opportunity. Firm can fund cheaply what customer cannot."
+  }
+}
